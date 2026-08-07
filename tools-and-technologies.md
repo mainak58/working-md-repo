@@ -1,15 +1,11 @@
 # System Design Roadmap — Progress Checklist
 
-> **Paste this into a GitHub Issue, not a repo file.** In issues, pull requests, and discussions the checkboxes are clickable and GitHub saves each tick for you. In a `.md` file inside a repo they render as read-only boxes — you'd have to edit `[ ]` to `[x]` by hand.
->
-> GitHub also shows a progress bar (e.g. "12 of 95") next to the issue in your issue list, as long as the task list is in the **first** comment.
+Tick a box by changing `[ ]` to `[x]`. Most Markdown editors (Obsidian, VS Code, GitHub, Notion) let you click the box directly.
 
-**How to use it:** new issue → title it `System Design Roadmap` → paste everything below → submit. Then just click boxes as you go.
-
-Each topic has three boxes:
-- **Learn** — read or watch until you can explain it out loud
+Each topic has three sub-boxes:
+- **Learn** — read/watch until you can explain it out loud
 - **Do** — write code or run the thing yourself
-- **Say** — could you answer the question with no notes?
+- **Explain** — could you answer an interview question on it without notes?
 
 Don't tick a topic until all three are done. Reading alone doesn't count.
 
