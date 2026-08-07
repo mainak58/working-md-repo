@@ -1,187 +1,380 @@
-# System Design Roadmap — Tools vs Concepts, in Learning Order
+# System Design Roadmap — Progress Checklist
 
-Everything below is grouped into **phases**. Each phase builds on the one before it, so work top to bottom. Every item is tagged as a **Concept** (an idea, pattern, or protocol) or a **Tool** (software you install, run, or subscribe to).
+Tick a box by changing `[ ]` to `[x]`. Most Markdown editors (Obsidian, VS Code, GitHub, Notion) let you click the box directly.
 
-> **The one rule that matters:** learn the *concept* before the *tool*. The concept tells you what problem exists and why. The tool is just one vendor's answer to it. Concepts last decades; tools get replaced every few years.
+Each topic has three sub-boxes:
+- **Learn** — read/watch until you can explain it out loud
+- **Do** — write code or run the thing yourself
+- **Explain** — could you answer an interview question on it without notes?
+
+Don't tick a topic until all three are done. Reading alone doesn't count.
+
+---
+
+## Progress Tracker
+
+| Phase | Topics | Done |
+|---|---|---|
+| 0 — Prerequisites | 5 | ` /5 ` |
+| 1 — Traffic & Edge | 4 | ` /4 ` |
+| 2 — Database | 3 | ` /3 ` |
+| 3 — Scaling | 3 | ` /3 ` |
+| 4 — Real-Time | 4 | ` /4 ` |
+| 5 — Messaging | 3 | ` /3 ` |
+| 6 — Deployment | 3 | ` /3 ` |
+| 7 — Observability | 3 | ` /3 ` |
+| 8 — Performance | 2 | ` /2 ` |
+| 9 — Optional | 2 | ` /2 ` |
+| **Total** | **32** | ` /32 ` |
+
+**Started:** ______________ **Target finish:** ______________
 
 ---
 
 ## Phase 0 — Prerequisites
 
-Don't start the roadmap until these are comfortable. If they aren't, the rest will feel like memorizing trivia.
+- [ ] **HTTP fundamentals** — methods, status codes, headers, cookies
+- [ ] **Client / server / port** — what they actually are
+- [ ] **Linux command line** — navigating, permissions, processes, logs
+- [ ] **One backend language + one database** — enough to build CRUD
+- [ ] **Git** — branches, merges, rebase, resolving conflicts
 
-- How HTTP works — methods, status codes, headers, cookies
-- What a client, a server, and a port actually are
-- Basic Linux command line
-- One backend language and one database you can build a small CRUD app in
-- Git
-
-**Build first:** a small REST API with a database behind it, running on your own machine. Everything after this is about making that app faster, more reliable, and able to handle more people.
+**Milestone project**
+- [ ] Built a small REST API with a database behind it, running locally
 
 ---
 
 ## Phase 1 — Getting Traffic to Your Server
 
-The first thing you hit in the real world: something has to sit between the internet and your app.
+### 1. Nginx `Tool`
+- [ ] Learn — reverse proxy, static files, TLS termination, config syntax
+- [ ] Do — put Nginx in front of your API
+- [ ] Explain — why do we need a reverse proxy at all?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 1 | **Nginx** | Tool | Your first reverse proxy. Serves static files, terminates TLS, forwards requests to your app. Learn this before load balancers — it *is* one. |
-| 2 | **Load Balancing** | Concept | One server isn't enough. Learn round-robin, least-connections, health checks, and sticky sessions. Nginx already does this, so it's a natural next step. |
-| 3 | **CDN** | Concept | Caching static assets at edge locations near users. The cheapest performance win that exists. |
-| 4 | **Cloudflare** | Tool | The CDN concept made concrete, plus DNS, DDoS protection, and a WAF. Free tier is generous — set it up on a real domain. |
+### 2. Load Balancing `Concept`
+- [ ] Learn — round-robin, least-connections, health checks, sticky sessions
+- [ ] Do — run two app instances behind Nginx, watch traffic split
+- [ ] Explain — what breaks when a stateful app is load balanced?
 
-**Build:** put Nginx in front of your app, run two copies of the app behind it, and watch traffic split between them.
+### 3. CDN `Concept`
+- [ ] Learn — edge caching, cache headers, TTL, cache invalidation, origin
+- [ ] Do — serve static assets through a CDN, compare load times
+- [ ] Explain — what should never be cached at the edge?
+
+### 4. Cloudflare `Tool`
+- [ ] Learn — DNS, proxy mode, DDoS protection, WAF, page rules
+- [ ] Do — point a real domain through Cloudflare
+- [ ] Explain — what does "orange cloud" actually change?
+
+**Milestone project**
+- [ ] Nginx + two app instances + CDN in front, all working together
 
 ---
 
 ## Phase 2 — Making the Database Not Fall Over
 
-Databases are where most real systems actually break. Learn these in this exact order — each one assumes the previous.
+### 5. Database Indexing `Concept`
+- [ ] Learn — B-trees, composite indexes, covering indexes, reading `EXPLAIN`
+- [ ] Do — million-row table, slow query, add index, measure the difference
+- [ ] Explain — why does an index make writes slower?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 5 | **Database Indexing** | Concept | Start here. 90% of "our app is slow" is a missing index. Learn B-trees, composite indexes, and how to read an `EXPLAIN` output. |
-| 6 | **Database Replication** | Concept | Copy data to replicas for failover and read scaling. Introduces replication lag and eventual consistency — the first real distributed-systems idea you'll meet. |
-| 7 | **Database Sharding** | Concept | Splitting data across nodes by a shard key. Learn it *last* of the three, and understand that it's a last resort — it makes joins, transactions, and rebalancing genuinely hard. |
+### 6. Database Replication `Concept`
+- [ ] Learn — primary/replica, sync vs async, replication lag, failover
+- [ ] Do — set up a read replica, route reads to it
+- [ ] Explain — what is the read-after-write problem?
 
-**Build:** load a table with a million rows, run a slow query, add an index, measure the difference yourself.
+### 7. Database Sharding `Concept`
+- [ ] Learn — shard keys, range vs hash sharding, rebalancing, hotspots
+- [ ] Do — sketch a sharding scheme for a real table you own
+- [ ] Explain — why is sharding a last resort?
+
+**Milestone project**
+- [ ] Query that went from seconds to milliseconds, with before/after numbers written down
 
 ---
 
 ## Phase 3 — Scaling and Protecting the System
 
-Now that you can scale a database, learn the vocabulary for scaling everything else.
+### 8. Vertical vs Horizontal Scaling `Concept`
+- [ ] Learn — trade-offs, stateless services, session storage, sticky sessions
+- [ ] Do — make your app fully stateless so any instance can serve any request
+- [ ] Explain — what has to be true before you can scale horizontally?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 8 | **Vertical vs Horizontal Scaling** | Concept | The framing for every scaling decision. Bigger machine vs more machines, and why stateless services are what make horizontal scaling possible. |
-| 9 | **Redis** | Tool | Your first cache. Also covers cache invalidation, TTLs, and the cache-aside pattern — the concepts that make it useful. |
-| 10 | **Rate Limiting** | Concept | Protects everything you just built. Learn token bucket and sliding window, then implement one with Redis counters. |
+### 9. Redis `Tool`
+- [ ] Learn — data types, TTL, cache-aside pattern, persistence, eviction policies
+- [ ] Do — cache your slowest endpoint, measure hit rate
+- [ ] Explain — why is cache invalidation famously hard?
 
-**Build:** add a Redis cache in front of your slowest endpoint, then add a per-IP rate limiter using Redis.
+### 10. Rate Limiting `Concept`
+- [ ] Learn — token bucket, leaky bucket, fixed vs sliding window
+- [ ] Do — build a per-IP rate limiter with Redis counters
+- [ ] Explain — where should rate limiting live: edge, gateway, or app?
+
+**Milestone project**
+- [ ] Cached, rate-limited, stateless API running on multiple instances
 
 ---
 
 ## Phase 4 — Real-Time Communication
 
-A clean progression from simplest to hardest. Each step exists because the previous one wasn't enough.
+### 11. Polling `Concept`
+- [ ] Learn — short polling vs long polling, cost and latency trade-offs
+- [ ] Do — build a live counter with short polling
+- [ ] Explain — when is plain polling still the right answer?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 11 | **Polling** | Concept | The naive solution — client asks repeatedly. Learn short polling, then long polling. Understanding why it's wasteful motivates everything below. |
-| 12 | **Server-Sent Events (SSE)** | Concept | One-way server → client streaming over plain HTTP. Auto-reconnects, dead simple. Correct answer for notifications, live feeds, and AI token streaming. |
-| 13 | **WebSockets** | Concept | Full-duplex persistent connection. Reach for this only when the client also needs to push — chat, multiplayer, collaborative editing. |
-| 14 | **WebRTC** | Concept | Peer-to-peer audio, video, and data. Hardest of the four by a wide margin: STUN, TURN, ICE, SDP, and you still need a signaling server. Skip until you specifically need P2P media. |
+### 12. Server-Sent Events `Concept`
+- [ ] Learn — EventSource API, auto-reconnect, event IDs, connection limits
+- [ ] Do — rebuild the same live counter with SSE
+- [ ] Explain — why is SSE usually right for notifications and token streaming?
 
-**Build:** the same live-counter feature three times — polling, then SSE, then WebSockets. The differences become obvious immediately.
+### 13. WebSockets `Concept`
+- [ ] Learn — HTTP upgrade handshake, frames, heartbeats, scaling across instances
+- [ ] Do — rebuild the live counter with WebSockets; try a small chat app
+- [ ] Explain — what breaks when WebSocket servers sit behind a load balancer?
+
+### 14. WebRTC `Concept`
+- [ ] Learn — STUN, TURN, ICE, SDP, signaling, data channels
+- [ ] Do — get a one-to-one video call working between two browsers
+- [ ] Explain — why do you still need a server for a "peer-to-peer" protocol?
+
+**Milestone project**
+- [ ] Same feature built three ways — polling, SSE, WebSockets — with notes on the differences
 
 ---
 
 ## Phase 5 — Async Work and Messaging
 
-The moment you have a task too slow for a request cycle, you need this.
+### 15. Pub/Sub `Concept`
+- [ ] Learn — topics, publishers, subscribers, fan-out, decoupling
+- [ ] Do — publish and subscribe using Redis Pub/Sub
+- [ ] Explain — what does Redis Pub/Sub lose that a real broker gives you?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 15 | **Pub/Sub** | Concept | The decoupling pattern — publishers emit to a topic, subscribers consume independently, neither knows the other. Try it in Redis first; it's ten lines of code. |
-| 16 | **RabbitMQ** | Tool | Traditional broker. Push-based, messages acknowledged and removed, smart routing via exchanges. The right mental model for *task queues*. |
-| 17 | **Kafka** | Tool | Distributed commit log. Messages are retained and replayable, consumers track their own offset. The right mental model for *event streams*. Learn after RabbitMQ — the offset model only makes sense by contrast. |
+### 16. RabbitMQ `Tool`
+- [ ] Learn — exchanges, bindings, queues, acks, dead-letter queues, prefetch
+- [ ] Do — move a slow task (email, image resize) to a background worker
+- [ ] Explain — what happens to a message if the worker crashes mid-task?
 
-**Build:** move email sending out of your request handler and into a background worker consuming from a queue.
+### 17. Kafka `Tool`
+- [ ] Learn — topics, partitions, offsets, consumer groups, retention, replay
+- [ ] Do — produce and consume a stream; replay from an earlier offset
+- [ ] Explain — how does the offset model differ from ack-and-delete?
+
+**Milestone project**
+- [ ] Request handler returns instantly; the slow work happens in a worker off a queue
 
 ---
 
 ## Phase 6 — Shipping It
 
-You now have a system worth deploying properly.
+### 18. Docker `Tool`
+- [ ] Learn — images, layers, volumes, networks, multi-stage builds, Compose
+- [ ] Do — containerize your app and its database with Docker Compose
+- [ ] Explain — why is image layer order important for build speed?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 18 | **Docker** | Tool | Package the app with its dependencies. Learn images, layers, volumes, networks, and Docker Compose before touching anything else in this phase. |
-| 19 | **CI/CD** | Concept | Continuous Integration (merge and test constantly) and Continuous Delivery (ship every passing build). Implement it with GitHub Actions — build the image, run tests, push it. |
-| 20 | **Kubernetes** | Tool | Container orchestration. Genuinely hard, and pointless without solid Docker fundamentals. Learn pods, deployments, services, and ingress — and note that ingress is just the load balancing from Phase 1 again. |
+### 19. CI/CD `Concept`
+- [ ] Learn — pipeline stages, artifacts, secrets, environments, rollback strategy
+- [ ] Do — GitHub Actions pipeline: test → build image → push
+- [ ] Explain — what's the difference between continuous delivery and deployment?
 
-**Build:** containerize your app, wire up a pipeline that tests and builds on every push, then deploy it to a local `kind` or `minikube` cluster.
+### 20. Kubernetes `Tool`
+- [ ] Learn — pods, deployments, services, ingress, configmaps, secrets
+- [ ] Do — deploy to a local `kind` or `minikube` cluster
+- [ ] Explain — how is an ingress different from a service?
+
+**Milestone project**
+- [ ] Push to `main` → tests run → image builds → app deploys, with no manual steps
 
 ---
 
 ## Phase 7 — Knowing What's Happening
 
-Never skip this. You cannot fix what you cannot see.
+### 21. Monitoring & Observability `Concept`
+- [ ] Learn — logs, metrics, traces; RED and USE methods; SLIs and SLOs
+- [ ] Do — add structured logging with request IDs
+- [ ] Explain — what can observability answer that monitoring can't?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 21 | **Monitoring & Observability** | Concept | *Monitoring* watches known metrics for known failures. *Observability* lets you ask new questions about failures nobody predicted. Learn the three pillars: logs, metrics, traces. |
-| 22 | **Prometheus** | Tool | Metrics collection and time-series storage. Pull-based scraping, PromQL, alerting rules. Instrument your own app with a client library. |
-| 23 | **Grafana** | Tool | Dashboards on top of Prometheus. Always learn it *after* Prometheus — Grafana only visualizes data something else collected. |
+### 22. Prometheus `Tool`
+- [ ] Learn — pull model, exporters, metric types, PromQL, alerting rules
+- [ ] Do — expose `/metrics`, scrape it, write a PromQL query
+- [ ] Explain — why pull-based instead of push?
 
-**Build:** expose a `/metrics` endpoint, scrape it with Prometheus, and chart request latency in Grafana.
+### 23. Grafana `Tool`
+- [ ] Learn — data sources, panels, variables, alerting
+- [ ] Do — build a dashboard: request rate, error rate, p95 latency
+- [ ] Explain — what belongs on a dashboard you'd actually look at during an incident?
+
+**Milestone project**
+- [ ] Live dashboard showing traffic, errors, and latency for your own app
 
 ---
 
 ## Phase 8 — Finding the Breaking Point
 
-With dashboards in place, you can finally measure instead of guess.
+### 24. Load Testing `Concept`
+- [ ] Learn — throughput vs latency, p50/p95/p99, ramp profiles, soak tests
+- [ ] Do — run k6 against your API until latency degrades; record the number
+- [ ] Explain — why are average latencies misleading?
 
-| # | Topic | Type | Why here |
-|---|---|---|---|
-| 24 | **Load Testing** | Concept | Simulated traffic to find throughput limits and latency percentiles. Focus on p95/p99, not averages. Tools: k6, JMeter, Locust. |
-| 25 | **Memory Leak** | Concept | Memory allocated but never released, growing until the process dies. You'll usually spot it as a slow upward slope on a Grafana chart — which is exactly why this comes after Phase 7. |
+### 25. Memory Leak `Concept`
+- [ ] Learn — common causes, heap snapshots, profiling in your language
+- [ ] Do — deliberately introduce a leak, then find it on your Grafana chart
+- [ ] Explain — how do you tell a leak apart from normal cache growth?
 
-**Build:** run k6 against your API and push it until latency degrades. Find the number.
+**Milestone project**
+- [ ] Written record of your system's breaking point and what failed first
 
 ---
 
 ## Phase 9 — Learn When You Actually Need Them
 
-Genuinely useful, but solving problems a beginner doesn't have yet. Don't front-load these.
+### 26. GraphQL `Concept`
+- [ ] Learn — schema, resolvers, queries vs mutations, N+1 problem, DataLoader
+- [ ] Do — wrap an existing REST API in a GraphQL layer
+- [ ] Explain — when is REST still the better choice?
 
-| # | Topic | Type | When you need it |
-|---|---|---|---|
-| 26 | **GraphQL** | Concept | When REST endpoint sprawl or client over-fetching becomes a real pain. Understand REST properly first, or you won't see what problem it solves. |
-| 27 | **Turborepo** | Tool | When you have several JS/TS packages in one repo and builds get slow. Pure developer-experience tooling, unrelated to system design. |
-
----
-
-## Fast-Track: The Minimum Path
-
-If you only have limited time, this ordered subset gets you most of the value:
-
-`Nginx → Indexing → Redis → Docker → CI/CD → Prometheus + Grafana → Pub/Sub → Load Testing`
+### 27. Turborepo `Tool`
+- [ ] Learn — workspaces, task pipelines, local and remote caching
+- [ ] Do — set up a two-package monorepo with a shared library
+- [ ] Explain — what makes the second build faster than the first?
 
 ---
 
-## Reference: Full Split
+## Fast-Track Path
 
-**Tools (9):** Nginx · Cloudflare · Redis · RabbitMQ · Kafka · Docker · Kubernetes · Prometheus · Grafana · Turborepo
+Short on time? These eight in order get most of the value:
 
-**Concepts (17):** Load Balancing · CDN · Database Indexing · Database Replication · Database Sharding · Vertical vs Horizontal Scaling · Rate Limiting · Polling · SSE · WebSockets · WebRTC · Pub/Sub · CI/CD · Monitoring & Observability · Load Testing · Memory Leak · GraphQL
-
----
-
-## Borderline Cases
-
-Several items sit on the line. The pattern is almost always *concept, implemented by tools*:
-
-| Item | Concept | Tools that implement it |
-|---|---|---|
-| **Load balancer** | Load balancing | Nginx, HAProxy, Envoy, AWS ALB |
-| **CDN** | Edge caching architecture | Cloudflare, Akamai, Fastly, CloudFront |
-| **CI/CD** | The practice | GitHub Actions, GitLab CI, Jenkins, ArgoCD |
-| **Pub/Sub** | The messaging pattern | Redis Pub/Sub, Kafka, NATS, AWS SNS, Google Cloud Pub/Sub |
-| **Monitoring & Observability** | The discipline | Prometheus, Grafana, OpenTelemetry, Jaeger, Datadog |
-| **Load testing** | The practice | k6, JMeter, Locust, Gatling |
-| **GraphQL** | A specification | Apollo Server, Hasura, GraphQL Yoga |
-| **Rate limiting** | The technique | Redis counters, Nginx `limit_req`, Cloudflare rules |
-| **WebRTC** | A W3C/IETF standard | Browser APIs, plus coturn for TURN and your own signaling server |
-
-Note that **Google Cloud Pub/Sub** is a specific product that shares a name with the generic pattern — context tells you which one someone means.
+- [ ] Nginx
+- [ ] Database Indexing
+- [ ] Redis
+- [ ] Docker
+- [ ] CI/CD
+- [ ] Prometheus + Grafana
+- [ ] Pub/Sub
+- [ ] Load Testing
 
 ---
 
-## Two Notes on Method
+## Notes
 
-**Kafka and RabbitMQ are not competitors.** Kafka is a retained, replayable event log. RabbitMQ is a task queue with smart routing. Choosing between them is a design decision, not a preference.
+Use this space for things you got stuck on, decisions you made, or topics to revisit.
 
-**Build something at every phase.** Reading about sharding teaches you the word. Actually watching replication lag break your read-after-write assumption teaches you the concept.
+```
+Date        Topic                 Note
+__________  ____________________  ________________________________________
+__________  ____________________  ________________________________________
+__________  ____________________  ________________________________________
+__________  ____________________  ________________________________________
+__________  ____________________  ________________________________________
+```
+
+---
+
+## Making the Boxes Clickable
+
+Plain Markdown checkboxes are just text — whether you can *click* them depends on where you open the file.
+
+**Clicking already works here (no setup):**
+
+| App | How |
+|---|---|
+| **Obsidian** | Reading view or Live Preview — click the box, the file is edited on disk |
+| **VS Code** | Open the Markdown preview (`Ctrl/Cmd + Shift + V`) and click |
+| **GitHub / GitLab** | Paste into an **issue, PR, or discussion** — clicking there toggles and saves. In a repo `.md` file the boxes are read-only; you edit the text instead. |
+| **Notion** | Paste the contents; `- [ ]` converts to native to-do blocks |
+| **Typora / Joplin / Logseq** | Click directly in the editor |
+
+**Clicking does *not* work in:** plain text editors (Notepad, nano), the GitHub raw view, or most static Markdown previewers. There, edit `[ ]` to `[x]` by hand.
+
+### If your viewer renders raw HTML
+
+Some Markdown renderers pass HTML straight through. In those, the block below turns every checkbox above into a live, clickable control that remembers what you ticked. Leave it at the bottom of the file — it only activates where it can, and shows up as an inert code fence everywhere else.
+
+<div id="roadmap-tracker-status" style="font:13px/1.5 system-ui,sans-serif;padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#fafafa;color:#555">Checkbox tracker inactive — this viewer doesn't run scripts. Edit <code>[ ]</code> to <code>[x]</code> manually.</div>
+
+<script>
+(function () {
+  var STORE_KEY = "system-design-checklist-v1";
+  var boxes = Array.prototype.slice.call(
+    document.querySelectorAll('input[type="checkbox"]')
+  ).filter(function (b) { return b.id !== "roadmap-noop"; });
+
+  if (!boxes.length) return;
+
+  var status = document.getElementById("roadmap-tracker-status");
+  var state = {};
+
+  // Stable key per checkbox: position + its label text.
+  function keyFor(box, i) {
+    var row = box.closest("li") || box.parentElement;
+    var text = (row ? row.textContent : "").trim().slice(0, 80);
+    return i + "::" + text;
+  }
+
+  function read() {
+    try {
+      if (window.storage && window.storage.get) return null; // handled async below
+      var raw = window.localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function write() {
+    try {
+      if (window.storage && window.storage.set) {
+        window.storage.set(STORE_KEY, JSON.stringify(state));
+        return;
+      }
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    } catch (e) { /* storage blocked — ticks still work for this session */ }
+  }
+
+  function paint() {
+    var done = 0;
+    boxes.forEach(function (b, i) {
+      if (state[keyFor(b, i)]) { b.checked = true; done++; }
+      var row = b.closest("li");
+      if (row) {
+        row.style.opacity = b.checked ? "0.55" : "1";
+        row.style.textDecoration = b.checked ? "line-through" : "none";
+      }
+    });
+    var pct = Math.round((done / boxes.length) * 100);
+    if (status) {
+      status.innerHTML =
+        '<strong style="font-size:15px">' + pct + '%</strong> — ' +
+        done + ' of ' + boxes.length + ' boxes ticked. ' +
+        '<button id="roadmap-reset" style="font:inherit;margin-left:8px;padding:3px 10px;' +
+        'border:1px solid #ccc;border-radius:99px;background:#fff;cursor:pointer">Reset</button>';
+      var btn = document.getElementById("roadmap-reset");
+      if (btn) btn.onclick = function () {
+        if (!confirm("Clear every tick?")) return;
+        state = {};
+        boxes.forEach(function (b) { b.checked = false; });
+        write(); paint();
+      };
+    }
+  }
+
+  boxes.forEach(function (b, i) {
+    b.disabled = false;             // Markdown renderers ship these disabled
+    b.style.cursor = "pointer";
+    b.addEventListener("change", function () {
+      if (b.checked) state[keyFor(b, i)] = 1; else delete state[keyFor(b, i)];
+      write(); paint();
+    });
+  });
+
+  if (window.storage && window.storage.get) {
+    window.storage.get(STORE_KEY)
+      .then(function (r) { state = r && r.value ? JSON.parse(r.value) : {}; paint(); })
+      .catch(function () { state = {}; paint(); });
+  } else {
+    state = read() || {};
+    paint();
+  }
+})();
+</script>
+
+**What it does:** un-disables every checkbox on the page, restores your previous ticks on load, strikes through completed rows, and shows a live percentage with a reset button. Progress is stored per browser, so it won't follow you to another device.
+
+**Want it guaranteed to work?** Save this file with a `.html` extension instead, or use Obsidian — that's the least fussy option, and the ticks get written back into the file itself so they travel with it.
