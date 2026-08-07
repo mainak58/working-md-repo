@@ -1,11 +1,15 @@
 # System Design Roadmap — Progress Checklist
 
-Tick a box by changing `[ ]` to `[x]`. Most Markdown editors (Obsidian, VS Code, GitHub, Notion) let you click the box directly.
+> **Paste this into a GitHub Issue, not a repo file.** In issues, pull requests, and discussions the checkboxes are clickable and GitHub saves each tick for you. In a `.md` file inside a repo they render as read-only boxes — you'd have to edit `[ ]` to `[x]` by hand.
+>
+> GitHub also shows a progress bar (e.g. "12 of 95") next to the issue in your issue list, as long as the task list is in the **first** comment.
 
-Each topic has three sub-boxes:
-- **Learn** — read/watch until you can explain it out loud
+**How to use it:** new issue → title it `System Design Roadmap` → paste everything below → submit. Then just click boxes as you go.
+
+Each topic has three boxes:
+- **Learn** — read or watch until you can explain it out loud
 - **Do** — write code or run the thing yourself
-- **Explain** — could you answer an interview question on it without notes?
+- **Say** — could you answer the question with no notes?
 
 Don't tick a topic until all three are done. Reading alone doesn't count.
 
@@ -266,115 +270,3 @@ __________  ____________________  ________________________________________
 __________  ____________________  ________________________________________
 __________  ____________________  ________________________________________
 ```
-
----
-
-## Making the Boxes Clickable
-
-Plain Markdown checkboxes are just text — whether you can *click* them depends on where you open the file.
-
-**Clicking already works here (no setup):**
-
-| App | How |
-|---|---|
-| **Obsidian** | Reading view or Live Preview — click the box, the file is edited on disk |
-| **VS Code** | Open the Markdown preview (`Ctrl/Cmd + Shift + V`) and click |
-| **GitHub / GitLab** | Paste into an **issue, PR, or discussion** — clicking there toggles and saves. In a repo `.md` file the boxes are read-only; you edit the text instead. |
-| **Notion** | Paste the contents; `- [ ]` converts to native to-do blocks |
-| **Typora / Joplin / Logseq** | Click directly in the editor |
-
-**Clicking does *not* work in:** plain text editors (Notepad, nano), the GitHub raw view, or most static Markdown previewers. There, edit `[ ]` to `[x]` by hand.
-
-### If your viewer renders raw HTML
-
-Some Markdown renderers pass HTML straight through. In those, the block below turns every checkbox above into a live, clickable control that remembers what you ticked. Leave it at the bottom of the file — it only activates where it can, and shows up as an inert code fence everywhere else.
-
-<div id="roadmap-tracker-status" style="font:13px/1.5 system-ui,sans-serif;padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#fafafa;color:#555">Checkbox tracker inactive — this viewer doesn't run scripts. Edit <code>[ ]</code> to <code>[x]</code> manually.</div>
-
-<script>
-(function () {
-  var STORE_KEY = "system-design-checklist-v1";
-  var boxes = Array.prototype.slice.call(
-    document.querySelectorAll('input[type="checkbox"]')
-  ).filter(function (b) { return b.id !== "roadmap-noop"; });
-
-  if (!boxes.length) return;
-
-  var status = document.getElementById("roadmap-tracker-status");
-  var state = {};
-
-  // Stable key per checkbox: position + its label text.
-  function keyFor(box, i) {
-    var row = box.closest("li") || box.parentElement;
-    var text = (row ? row.textContent : "").trim().slice(0, 80);
-    return i + "::" + text;
-  }
-
-  function read() {
-    try {
-      if (window.storage && window.storage.get) return null; // handled async below
-      var raw = window.localStorage.getItem(STORE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
-  }
-
-  function write() {
-    try {
-      if (window.storage && window.storage.set) {
-        window.storage.set(STORE_KEY, JSON.stringify(state));
-        return;
-      }
-      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    } catch (e) { /* storage blocked — ticks still work for this session */ }
-  }
-
-  function paint() {
-    var done = 0;
-    boxes.forEach(function (b, i) {
-      if (state[keyFor(b, i)]) { b.checked = true; done++; }
-      var row = b.closest("li");
-      if (row) {
-        row.style.opacity = b.checked ? "0.55" : "1";
-        row.style.textDecoration = b.checked ? "line-through" : "none";
-      }
-    });
-    var pct = Math.round((done / boxes.length) * 100);
-    if (status) {
-      status.innerHTML =
-        '<strong style="font-size:15px">' + pct + '%</strong> — ' +
-        done + ' of ' + boxes.length + ' boxes ticked. ' +
-        '<button id="roadmap-reset" style="font:inherit;margin-left:8px;padding:3px 10px;' +
-        'border:1px solid #ccc;border-radius:99px;background:#fff;cursor:pointer">Reset</button>';
-      var btn = document.getElementById("roadmap-reset");
-      if (btn) btn.onclick = function () {
-        if (!confirm("Clear every tick?")) return;
-        state = {};
-        boxes.forEach(function (b) { b.checked = false; });
-        write(); paint();
-      };
-    }
-  }
-
-  boxes.forEach(function (b, i) {
-    b.disabled = false;             // Markdown renderers ship these disabled
-    b.style.cursor = "pointer";
-    b.addEventListener("change", function () {
-      if (b.checked) state[keyFor(b, i)] = 1; else delete state[keyFor(b, i)];
-      write(); paint();
-    });
-  });
-
-  if (window.storage && window.storage.get) {
-    window.storage.get(STORE_KEY)
-      .then(function (r) { state = r && r.value ? JSON.parse(r.value) : {}; paint(); })
-      .catch(function () { state = {}; paint(); });
-  } else {
-    state = read() || {};
-    paint();
-  }
-})();
-</script>
-
-**What it does:** un-disables every checkbox on the page, restores your previous ticks on load, strikes through completed rows, and shows a live percentage with a reset button. Progress is stored per browser, so it won't follow you to another device.
-
-**Want it guaranteed to work?** Save this file with a `.html` extension instead, or use Obsidian — that's the least fussy option, and the ticks get written back into the file itself so they travel with it.
