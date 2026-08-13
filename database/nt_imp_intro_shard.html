@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partitioning, torn apart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E7E6DC;
+  --sheet:#F7F6EF;
+  --band:#DCE8D4;
+  --ink:#1E241C;
+  --ink-2:#4F5749;
+  --ink-3:#868C7C;
+  --rule:#BCBFB1;
+  --stamp:#B23A2E;
+  --pen:#2A5F86;
+  --moss:#4A7A3F;
+  --ochre:#A2700F;
+  --chip-bg:#EDEFE6;
+  --moved-bg:#F6E2DF;
+  --hit-bg:#E8EEF3;
+  --slow-bg:#F4EEDF;
+  --err-bg:#F7E7E4;
+  --ok-bg:#E9F0E4;
+  --hole:#DCDBD0;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --cond:"IBM Plex Sans Condensed","Helvetica Neue",Arial,sans-serif;
+  --serif:"IBM Plex Serif",Georgia,serif;
+}
+html[data-theme="dark"]{
+  --paper:#101208;
+  --sheet:#191C13;
+  --band:#222719;
+  --ink:#E6E7D6;
+  --ink-2:#ADB29B;
+  --ink-3:#787D69;
+  --rule:#3B4032;
+  --stamp:#E2705F;
+  --pen:#77AED4;
+  --moss:#8FBE72;
+  --ochre:#DCA945;
+  --chip-bg:#20241A;
+  --moved-bg:#33231F;
+  --hit-bg:#1B2630;
+  --slow-bg:#2C2718;
+  --err-bg:#2E1E1B;
+  --ok-bg:#1D2718;
+  --hole:#0A0B05;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.62;
+  transition:background .35s ease,color .35s ease;
+}
+.feed{position:relative;max-width:1040px;margin:0 auto;background:var(--sheet);
+  border-left:1px solid var(--rule);border-right:1px solid var(--rule);min-height:100vh;
+  transition:background .35s ease}
+.rail{position:absolute;top:0;bottom:0;width:30px;
+  background-image:radial-gradient(circle at center,var(--hole) 0 5px,transparent 5.5px);
+  background-size:30px 28px;border-right:1px dashed var(--rule)}
+.rail-r{right:0;border-right:0;border-left:1px dashed var(--rule)}
+.rail-l{left:0}
+main{padding:0 66px}
+section{padding:54px 0}
+
+/* ---------- type ---------- */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 14px}
+h1{font-family:var(--cond);font-weight:700;font-size:clamp(38px,7vw,66px);line-height:.98;
+  letter-spacing:-.02em;margin:0 0 18px}
+h2{font-family:var(--cond);font-weight:600;font-size:clamp(25px,4vw,34px);line-height:1.1;
+  letter-spacing:-.01em;margin:0 0 12px}
+h3{font-family:var(--cond);font-weight:600;font-size:19px;margin:26px 0 8px;letter-spacing:0}
+p{margin:0 0 16px;max-width:66ch}
+.lede{font-size:20px;color:var(--ink-2);max-width:60ch}
+code,.mono{font-family:var(--mono);font-size:.9em}
+p code{background:var(--chip-bg);padding:1px 5px;border-radius:2px}
+strong{font-weight:500;color:var(--ink)}
+em{font-style:italic}
+.note{font-family:var(--cond);font-size:15px;color:var(--ink-2);border-left:2px solid var(--rule);
+  padding-left:14px;margin:20px 0;max-width:62ch}
+
+/* ---------- perforation ---------- */
+.perf{position:relative;border-top:2px dashed var(--rule);height:0;margin:0 -66px}
+.perf span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--sheet);
+  padding:0 14px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-3)}
+
+/* ---------- controls ---------- */
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 22px}
+button{font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--sheet);color:var(--ink-2);border:1px solid var(--rule);border-radius:2px;
+  padding:8px 13px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+button:hover{border-color:var(--ink-2);color:var(--ink)}
+button[aria-pressed="true"],button.on{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+button:focus-visible{outline:2px solid var(--pen);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--rule);border-radius:0}
+.seg button:last-child{border-right:0}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-right:2px}
+
+/* ---------- hero table ---------- */
+.hero{padding-top:60px}
+.tabwrap{position:relative;margin:30px 0 10px;padding:20px 26px 26px;background:var(--sheet);
+  border:1px solid var(--rule);max-width:620px}
+.htab{display:grid;grid-template-columns:1.1fr 1.5fr 2fr 1.2fr;font-family:var(--mono);font-size:13px}
+.hcell{--tx:0px;--ty:0px;transform:translate(var(--tx),var(--ty));
+  transition:transform .55s cubic-bezier(.2,.85,.25,1);
+  height:34px;line-height:34px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcell.head{height:34px;line-height:34px;font-weight:600;border-bottom:1px solid var(--ink);
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.htab .r1,.htab .r3{background:var(--band)}
+.cut-v .hcell.right{--tx:42px}
+.cut-h .hcell.low{--ty:34px}
+.tear{position:absolute;opacity:0;transition:opacity .4s .15s}
+.tear-v{top:14px;bottom:14px;left:calc(46% + 21px);border-left:2px dashed var(--stamp)}
+.tear-h{left:20px;right:20px;top:157px;border-top:2px dashed var(--stamp)}
+.cut-v .tear-v,.cut-h .tear-h{opacity:1}
+.cap{font-family:var(--mono);font-size:12px;color:var(--ink-2);min-height:22px;max-width:620px}
+
+/* ---------- shard bins ---------- */
+.bins{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:6px 0 16px}
+.bin{border:1px solid var(--rule);background:var(--sheet);padding:10px;min-height:150px;
+  border-top:3px solid var(--c,var(--ink-3));position:relative;transition:box-shadow .3s}
+.bin.hot{box-shadow:inset 0 0 0 2px var(--stamp)}
+.bin h4{margin:0 0 2px;font-family:var(--cond);font-size:14px;font-weight:600}
+.bin .cnt{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-bottom:8px;display:block}
+.hotstamp{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+  color:var(--stamp);border:1px solid var(--stamp);padding:2px 5px;transform:rotate(-6deg)}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 6px;margin-bottom:3px;background:var(--chip-bg);
+  border-left:2px solid var(--c,var(--ink-3));animation:drop .38s cubic-bezier(.2,.9,.25,1) both}
+@keyframes drop{from{opacity:0;transform:translateY(-14px) scale(.96)}to{opacity:1;transform:none}}
+.readout{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--rule);
+  padding-top:10px;margin-top:4px}
+.readout b{color:var(--stamp);font-weight:600}
+
+/* ---------- key grid (rebalance) ---------- */
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(52px,1fr));gap:6px;margin:4px 0 16px}
+.key{font-family:var(--mono);font-size:11px;text-align:center;padding:9px 2px;border:1px solid var(--rule);
+  background:var(--sheet);border-bottom:4px solid var(--c);transition:border-color .4s,background .4s}
+.key.moved{animation:jolt .5s cubic-bezier(.3,1.4,.4,1) both;background:var(--moved-bg);border-color:var(--stamp)}
+@keyframes jolt{0%{transform:translateY(0)}35%{transform:translateY(-10px) rotate(-3deg)}100%{transform:none}}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-bottom:14px}
+.legend i{display:inline-block;width:10px;height:10px;background:var(--c);margin-right:5px;vertical-align:-1px}
+
+/* ---------- vertical split ---------- */
+.vsplit{display:flex;gap:0;margin:8px 0 18px;font-family:var(--mono);font-size:12.5px;
+  transition:gap .5s cubic-bezier(.2,.85,.25,1);flex-wrap:wrap}
+.vsplit.split{gap:34px}
+.vcol{border:1px solid var(--rule);background:var(--sheet);flex:1;min-width:120px;transition:border-color .4s}
+.vcol.hot{border-color:var(--pen)}
+.vcol.cold{border-color:var(--ochre)}
+.vcol .ch{font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:8px 10px;
+  border-bottom:1px solid var(--ink);font-weight:600}
+.vcol .cv{padding:7px 10px;border-bottom:1px solid var(--rule);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vcol .cv:nth-child(odd){background:var(--band)}
+.page{margin:14px 0;font-family:var(--mono);font-size:12px}
+.pagebar{height:26px;border:1px solid var(--rule);background:var(--sheet);display:flex;overflow:hidden;margin:5px 0 3px}
+.pagefill{background:var(--pen);transition:width .8s cubic-bezier(.2,.85,.25,1)}
+.pagefill.warm{background:var(--ochre)}
+
+/* ---------- router ---------- */
+.router{border:1px solid var(--rule);padding:16px;background:var(--sheet);margin:6px 0 16px}
+.steps{font-family:var(--mono);font-size:12.5px;min-height:104px;margin:0 0 14px;color:var(--ink-2)}
+.steps div{opacity:0;animation:fade .3s forwards}
+@keyframes fade{to{opacity:1}}
+.nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.node{border:1px solid var(--rule);border-top:3px solid var(--c);padding:10px;font-family:var(--mono);
+  font-size:11.5px;background:var(--sheet);transition:box-shadow .25s,background .25s}
+.node.hit{box-shadow:0 0 0 2px var(--pen) inset;background:var(--hit-bg)}
+.node.slow{box-shadow:0 0 0 2px var(--ochre) inset;background:var(--slow-bg)}
+.node .ms{display:block;color:var(--ink-3);margin-top:4px}
+
+/* ---------- functional split ---------- */
+.dbs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:6px 0 14px}
+.db{border:1px dashed var(--rule);padding:12px;min-height:130px}
+.db h4{margin:0 0 10px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3)}
+.tcard{border:1px solid var(--rule);border-left:3px solid var(--c);background:var(--sheet);
+  padding:8px 10px;margin-bottom:8px;font-family:var(--mono);font-size:12px;
+  animation:slide .45s cubic-bezier(.2,.9,.25,1) both}
+@keyframes slide{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.tcard small{display:block;color:var(--ink-3);font-size:10.5px}
+.errbox{font-family:var(--mono);font-size:12px;padding:10px 12px;border:1px solid var(--stamp);
+  color:var(--stamp);background:var(--err-bg);display:none}
+.errbox.show{display:block;animation:jolt .45s both}
+
+/* ---------- ladder ---------- */
+.ladder{list-style:none;padding:0;margin:18px 0 0;counter-reset:rung}
+.ladder li{position:relative;padding:14px 0 14px 62px;border-top:1px solid var(--rule);counter-increment:rung}
+.ladder li::before{content:counter(rung,decimal-leading-zero);position:absolute;left:0;top:16px;
+  font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.08em}
+.ladder li b{font-family:var(--cond);font-size:17px;font-weight:600;display:block}
+.ladder li span{font-size:15px;color:var(--ink-2)}
+.ladder li.here{background:var(--band)}
+.ladder li.here::after{content:"you are here";position:absolute;right:0;top:16px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--stamp);
+  border:1px solid var(--stamp);padding:2px 6px}
+
+.themer{position:fixed;top:16px;right:16px;z-index:20;display:flex;align-items:center;gap:8px;
+  background:var(--sheet);border:1px solid var(--rule);border-radius:2px;padding:7px 11px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);cursor:pointer;transition:border-color .2s,color .2s,background .35s}
+.themer:hover{border-color:var(--ink-2);color:var(--ink)}
+.themer .sw{position:relative;width:26px;height:13px;border:1px solid var(--rule);border-radius:7px;flex:none}
+.themer .sw::after{content:"";position:absolute;top:2px;left:2px;width:7px;height:7px;border-radius:50%;
+  background:var(--ochre);transition:transform .3s cubic-bezier(.3,1.3,.5,1),background .3s}
+html[data-theme="dark"] .themer .sw::after{transform:translateX(11px);background:var(--pen)}
+@media (max-width:820px){.themer{top:8px;right:8px;padding:6px 9px;font-size:9px}}
+
+.reveal{opacity:0;transform:translateY(16px)}
+.reveal.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+footer{padding:40px 0 70px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);
+  border-top:2px dashed var(--rule);margin-top:20px}
+
+@media (max-width:820px){
+  main{padding:0 22px}
+  .rail{display:none}
+  .perf{margin:0 -22px}
+  .dbs{grid-template-columns:1fr}
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+<script>
+(function(){var t;try{t=localStorage.getItem('pt-theme');}catch(e){}
+if(!t)t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);})();
+</script>
+</head>
+<body>
+<button class="themer" id="themer" aria-label="Switch colour theme">
+  <span class="sw" aria-hidden="true"></span><span id="themerLbl">day</span>
+</button>
+<div class="feed">
+<aside class="rail rail-l" aria-hidden="true"></aside>
+<aside class="rail rail-r" aria-hidden="true"></aside>
+<main>
+
+<section class="hero">
+  <p class="eyebrow">continuous form · 132 col · database partitioning</p>
+  <h1>One table,<br>torn two ways.</h1>
+  <p class="lede">Partitioning means taking one logical dataset and physically breaking it into smaller pieces — while the application keeps believing it is still one table. There are exactly two directions you can tear.</p>
+
+  <div class="bar" style="margin-top:26px">
+    <span class="lbl">tear the sheet</span>
+    <button id="cutH" aria-pressed="false">across rows</button>
+    <button id="cutV" aria-pressed="false">down columns</button>
+    <button id="cutR">reset</button>
+  </div>
+
+  <div class="tabwrap">
+    <div class="htab" id="htab"></div>
+    <div class="tear tear-v" aria-hidden="true"></div>
+    <div class="tear tear-h" aria-hidden="true"></div>
+  </div>
+  <p class="cap" id="heroCap">No cut. All 4 users, all 4 columns, one place.</p>
+
+  <p style="margin-top:26px">Tearing <strong>across rows</strong> is horizontal partitioning — every piece keeps the same columns but holds different users. Tearing <strong>down columns</strong> is vertical partitioning — every piece keeps all the users but holds different fields. Try both at once: real systems often do.</p>
+</section>
+
+<div class="perf"><span>tear here</span></div>
+
+<section class="reveal">
+  <p class="eyebrow">demo 01 · horizontal partitioning</p>
+  <h2>Where does row 7 live?</h2>
+  <p>This is what people usually mean by partitioning, and it is your option 2. The catch is that you cannot just put "50 rows here, 50 rows there." You need a <strong>rule</strong> that lets the application work out which database holds a user without searching for it. That rule is the <strong>partition key</strong>. Pick a strategy and watch the same 12 users land differently.</p>
+
+  <div class="bar">
+    <span class="lbl">strategy</span>
+    <span class="seg" id="stratSeg">
+      <button data-s="range" class="on">range</button>
+      <button data-s="hash">hash</button>
+      <button data-s="list">list</button>
+    </span>
+    <span class="lbl" style="margin-left:10px">shards</span>
+    <span class="seg" id="shardSeg">
+      <button data-n="2" class="on">2</button>
+      <button data-n="3">3</button>
+      <button data-n="4">4</button>
+    </span>
+    <button id="signup">+ 12 new signups</button>
+    <button id="reset1">reset</button>
+  </div>
+
+  <div class="bins" id="bins1"></div>
+  <p class="readout" id="read1"></p>
+  <p class="cap" id="strat1"></p>
+
+  <p style="margin-top:22px">Add signups while <strong>range</strong> is selected. Every new user has a higher id than every old one, so they all pile into the last shard — three machines sit idle while one absorbs the entire write load. That is a <strong>hot spot</strong>, and it is the reason range partitioning by id is usually a trap. Range by <em>time</em> is a different story: it is the most common partitioning scheme in production, because "last 7 days" then touches one partition instead of five years of history, and deleting old data becomes an instant <code>DROP PARTITION</code>.</p>
+</section>
+
+<div class="perf"><span>tear here</span></div>
+
+<section class="reveal">
+  <p class="eyebrow">demo 02 · the cost of growing</p>
+  <h2>Adding a shard moves your data</h2>
+  <p>Hash spreads load beautifully — until you need a third machine. If your rule is <code>hash(id) % 2</code> and it becomes <code>hash(id) % 3</code>, almost every row is suddenly on the wrong box and has to physically move. The fix is to hash into a fixed number of <strong>virtual buckets</strong> first, then map buckets onto machines. Watch the difference.</p>
+
+  <div class="bar">
+    <span class="lbl">mapping</span>
+    <span class="seg" id="modeSeg">
+      <button data-m="mod" class="on">hash % shards</button>
+      <button data-m="bucket">12 virtual buckets</button>
+    </span>
+    <span class="lbl" style="margin-left:10px">grow to</span>
+    <span class="seg" id="growSeg">
+      <button data-n="2" class="on">2</button>
+      <button data-n="3">3</button>
+      <button data-n="4">4</button>
+    </span>
+  </div>
+
+  <div class="legend" id="legend2"></div>
+  <div class="keys" id="keys2"></div>
+  <p class="readout" id="read2">Sitting on 2 shards. Grow to 3 and count the rows that have to move.</p>
+
+  <p style="margin-top:22px">Same hash function, same keys, wildly different migration cost. With buckets you only reassign whole buckets, so going from 2 to 3 machines moves roughly a third of the data instead of two thirds — and you can move it bucket by bucket while the system stays online. Use a real hash here (MD5, MurmurHash, xxHash), never a language's built-in string hash and never <code>Math.random</code>.</p>
+</section>
+
+<div class="perf"><span>tear here</span></div>
+
+<section class="reveal">
+  <p class="eyebrow">demo 03 · vertical partitioning</p>
+  <h2>The columns nobody reads</h2>
+  <p>The third option you did not list. Databases do not read single rows off disk — they read fixed-size <strong>pages</strong>, 8 KB at a time. If every row drags a 1.2 KB bio and an 800-byte preferences blob along with it, then <code>SELECT id, email</code> hauls all of that through disk and memory just to throw it away.</p>
+
+  <div class="bar">
+    <span class="lbl">table</span>
+    <button id="vsplitBtn" aria-pressed="false">split hot columns from cold</button>
+  </div>
+
+  <div class="vsplit" id="vsplit"></div>
+
+  <div class="page">
+    <span id="pageLbl">One 8 KB page holds 3 rows — 2,116 bytes each.</span>
+    <div class="pagebar"><div class="pagefill" id="pf" style="width:100%"></div></div>
+    <span id="pageCost">Reading id + email for 10,000 users: <b>3,334 pages</b> off disk.</span>
+  </div>
+
+  <p style="margin-top:20px">Splitting <code>users</code> into a narrow <code>users_core</code> and a wide <code>users_profile</code> means far more useful rows fit per page, so the queries you run constantly get dramatically cheaper. The cold table is still there, joined by <code>id</code>, for the rare page that actually needs a bio.</p>
+</section>
+
+<div class="perf"><span>tear here</span></div>
+
+<section class="reveal">
+  <p class="eyebrow">demo 04 · your option 1</p>
+  <h2>Splitting by feature is not sharding</h2>
+  <p>Putting <code>users</code> in db1 and <code>courses</code> in db2 is real and useful — it is called functional partitioning, or "database per service." But notice what it does and does not buy you.</p>
+
+  <div class="bar">
+    <button id="funcBtn" aria-pressed="false">split by feature</button>
+    <button id="joinBtn">run a query that joins users to courses</button>
+  </div>
+
+  <div class="dbs" id="dbs"></div>
+  <div class="errbox" id="joinErr"></div>
+  <p class="cap" id="funcCap">One database. Every table can join freely with every other table.</p>
+
+  <p style="margin-top:22px">You have split the <em>schema</em>, not any individual dataset. If <code>users</code> grows to 500 million rows, db1 is right back to being overloaded and you have gained nothing on that front. What you did gain is isolation: the two workloads can be tuned, backed up, and scaled independently. It is usually the right first move because it is simple and reversible — just don't mistake it for a fix for table size.</p>
+</section>
+
+<div class="perf"><span>tear here</span></div>
+
+<section class="reveal">
+  <p class="eyebrow">demo 05 · life after sharding</p>
+  <h2>Some queries get expensive</h2>
+  <p>Once rows live on four machines, the shape of a query decides its cost. A lookup by the shard key is one hop. Anything else fans out to every shard, and your latency becomes the <strong>slowest</strong> shard, not the average one.</p>
+
+  <div class="bar">
+    <span class="lbl">user id</span>
+    <span class="seg"><button id="idDown">−</button><button id="idVal" style="min-width:52px" disabled>7</button><button id="idUp">+</button></span>
+    <button id="qOne">select where id = 7</button>
+    <button id="qAll">select count(*) from users</button>
+  </div>
+
+  <div class="router">
+    <div class="steps" id="steps">Pick a query above.</div>
+    <div class="nodes" id="nodes"></div>
+  </div>
+
+  <p style="margin-top:6px">This is also where joins break. If users are sharded by <code>user_id</code> and courses by <code>course_id</code>, then "which courses is user 7 enrolled in" may have to hit both databases and join the results <em>in your application code</em>. The standard defence is <strong>co-location</strong>: pick one shard key for all related data — usually <code>tenant_id</code> or <code>org_id</code> — so everything one customer touches lives on one machine.</p>
+
+  <div class="note">Three more things that break, in rough order of how much they will hurt: transactions cannot span shards, so you need sagas or two-phase commit. Auto-increment ids collide, so you need UUIDs or a Snowflake-style generator. And changing the shard key later is close to impossible — this is the most consequential decision in the whole exercise.</div>
+</section>
+
+<div class="perf"><span>tear here</span></div>
+
+<section class="reveal">
+  <p class="eyebrow">closing · the order to do things</p>
+  <h2>You have 200 rows. Do none of this.</h2>
+  <p>This is the most useful sentence on the page. Postgres or MySQL on a modest server handles tens of millions of rows on a single node without complaint. Partitioning starts paying off somewhere north of 50–100 million rows, or when a table no longer fits in RAM. Sharding is for when one machine genuinely cannot hold your data or absorb your writes. Work down this list in order, and stop as soon as the problem goes away — most applications never get past rung three.</p>
+
+  <ol class="ladder">
+    <li class="here"><b>Index and optimise</b><span>Read the query plan. A missing index beats a new machine, every time.</span></li>
+    <li><b>Pool connections and cache</b><span>Redis in front of the hot reads. Cheapest order-of-magnitude you will ever buy.</span></li>
+    <li><b>Add read replicas</b><span>Sends reads elsewhere. Does nothing for writes, and introduces replication lag.</span></li>
+    <li><b>Split by feature</b><span>Your option 1. Simple, reversible, and it isolates workloads from each other.</span></li>
+    <li><b>Partition inside one database</b><span>Declarative partitioning. The database manages the pieces; your queries never change.</span></li>
+    <li><b>Shard across machines</b><span>Your option 2, for real. Reach for Citus or Vitess before you hand-roll a router.</span></li>
+  </ol>
+
+  <h3>The code, when you actually get there</h3>
+  <p>Postgres, range partitioned by time — the partition key must be part of every unique constraint, which is why the key sits inside the primary key:</p>
+  <pre style="font-family:var(--mono);font-size:12.5px;background:var(--chip-bg);padding:14px 16px;overflow-x:auto;border-left:3px solid var(--pen);line-height:1.65">CREATE TABLE orders (
+    id          bigserial,
+    user_id     bigint      NOT NULL,
+    created_at  timestamptz NOT NULL,
+    PRIMARY KEY (id, created_at)
+) PARTITION BY RANGE (created_at);
+
+CREATE TABLE orders_2026_08 PARTITION OF orders
+    FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');</pre>
+  <p>Create future partitions before rows need them or inserts fail — automate it with <code>pg_partman</code> rather than a cron job you will forget. Then run <code>EXPLAIN</code> on a query filtered by <code>created_at</code> and confirm it touches one partition. That pruning is the entire point; if it is not happening, the partitioning is doing nothing for you.</p>
+</section>
+
+<footer>
+  <p style="max-width:none;margin:0">Partitioning, torn apart · built as a single self-contained page · everything below the fold is live, nothing is a screenshot</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function(){
+"use strict";
+var COL = ['var(--pen)','var(--stamp)','var(--moss)','var(--ochre)'];
+
+function fnv(n){var s=String(n),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+
+/* ============ HERO TEAR ============ */
+var HEAD=['id','name','bio','avatar'];
+var HROWS=[['1','alice','long text…','2 MB'],['2','bob','long text…','2 MB'],
+           ['3','carol','long text…','2 MB'],['4','dan','long text…','2 MB']];
+(function(){
+  var t=document.getElementById('htab');
+  HEAD.forEach(function(h,c){var d=el('div','hcell head',h);if(c>=2)d.classList.add('right');t.appendChild(d);});
+  HROWS.forEach(function(row,r){
+    row.forEach(function(v,c){
+      var d=el('div','hcell r'+r,v);
+      if(c>=2)d.classList.add('right');
+      if(r>=2)d.classList.add('low');
+      t.appendChild(d);
+    });
+  });
+})();
+var tab=document.getElementById('htab'),cap=document.getElementById('heroCap');
+var bH=document.getElementById('cutH'),bV=document.getElementById('cutV');
+function heroCap(){
+  var h=tab.classList.contains('cut-h'),v=tab.classList.contains('cut-v');
+  if(h&&v)cap.textContent='Both cuts. Four pieces — 2 shards × 2 column groups. This is how large systems really look.';
+  else if(h)cap.textContent='Horizontal cut. Shard 1 holds users 1–2, shard 2 holds users 3–4. Same columns, different rows.';
+  else if(v)cap.textContent='Vertical cut. users_core holds id + name, users_profile holds bio + avatar. Same users, different columns.';
+  else cap.textContent='No cut. All 4 users, all 4 columns, one place.';
+}
+bH.onclick=function(){var on=tab.classList.toggle('cut-h');bH.setAttribute('aria-pressed',on);heroCap();};
+bV.onclick=function(){var on=tab.classList.toggle('cut-v');bV.setAttribute('aria-pressed',on);heroCap();};
+document.getElementById('cutR').onclick=function(){
+  tab.classList.remove('cut-h','cut-v');
+  bH.setAttribute('aria-pressed','false');bV.setAttribute('aria-pressed','false');heroCap();
+};
+
+/* ============ DEMO 1 : DISTRIBUTE ============ */
+var NAMES=['alice','bob','carol','dan','eve','farid','gita','hari','ira','jaya','kabir','lina',
+           'meera','nikhil','omar','priya','ravi','sana','tara','uday','vik','wendy','xu','yash'];
+var CTRY=['IN','US','DE'];
+var strat='range',NS=2,pool=[];
+function mkUsers(n,from){var a=[];for(var i=0;i<n;i++){var id=from+i;a.push({id:id,name:NAMES[(id-1)%NAMES.length],c:CTRY[fnv(id*7)%3]});}return a;}
+function resetPool(){pool=mkUsers(12,1);}
+resetPool();
+
+var STRAT_TXT={
+  range:'Rule: ids 1–6 → shard 1, 7–12 → shard 2, and so on. Easy to reason about. Every new signup lands on the last shard.',
+  hash:'Rule: hash(id) % shards. Even spread, no hot spot — but adding a shard rehashes almost everything. See demo 02.',
+  list:'Rule: country IN → shard 1, US → shard 2, DE → shard 3. Perfect for data-residency law. Useless if 90% of users share one country.'
+};
+function assign(u){
+  if(strat==='range')return Math.min(Math.floor((u.id-1)/6),NS-1);
+  if(strat==='hash')return fnv(u.id)%NS;
+  return CTRY.indexOf(u.c)%NS;
+}
+function render1(){
+  var wrap=document.getElementById('bins1');wrap.innerHTML='';
+  var bins=[],i;
+  for(i=0;i<NS;i++)bins.push([]);
+  pool.forEach(function(u){bins[assign(u)].push(u);});
+  var avg=pool.length/NS,hot=-1,max=0;
+  bins.forEach(function(b,i){if(b.length>max){max=b.length;hot=i;}});
+  var isHot=max>avg*1.55&&max>=4;
+  bins.forEach(function(b,i){
+    var d=el('div','bin');d.style.setProperty('--c',COL[i]);
+    if(isHot&&i===hot){d.classList.add('hot');d.appendChild(el('span','hotstamp','HOT'));}
+    d.appendChild(el('h4','','shard '+(i+1)));
+    d.appendChild(el('span','cnt',b.length+' rows · db'+(i+1)));
+    b.slice(0,14).forEach(function(u,k){
+      var c=el('div','chip','#'+u.id+' '+u.name+(strat==='list'?' · '+u.c:''));
+      c.style.setProperty('--c',COL[i]);c.style.animationDelay=(k*32)+'ms';d.appendChild(c);
+    });
+    if(b.length>14)d.appendChild(el('div','cnt','+'+(b.length-14)+' more'));
+    wrap.appendChild(d);
+  });
+  var counts=bins.map(function(b){return b.length;}).join(' / ');
+  var r=document.getElementById('read1');
+  r.innerHTML='Total '+pool.length+' rows · split '+counts+
+    (isHot?' · <b>shard '+(hot+1)+' is taking '+Math.round(max/pool.length*100)+'% of the load</b>':' · evenly balanced');
+  document.getElementById('strat1').textContent=STRAT_TXT[strat];
+}
+document.getElementById('stratSeg').onclick=function(e){
+  var b=e.target.closest('button');if(!b)return;
+  strat=b.dataset.s;
+  [].forEach.call(this.children,function(x){x.classList.toggle('on',x===b);});
+  render1();
+};
+document.getElementById('shardSeg').onclick=function(e){
+  var b=e.target.closest('button');if(!b)return;
+  NS=+b.dataset.n;
+  [].forEach.call(this.children,function(x){x.classList.toggle('on',x===b);});
+  render1();
+};
+document.getElementById('signup').onclick=function(){
+  if(pool.length>=48)return;
+  pool=pool.concat(mkUsers(12,pool.length+1));render1();
+};
+document.getElementById('reset1').onclick=function(){resetPool();render1();};
+render1();
+
+/* ============ DEMO 2 : REBALANCE ============ */
+var BUCKETS={2:[0,0,0,0,0,0,1,1,1,1,1,1],3:[0,0,0,0,2,2,1,1,1,1,2,2],4:[0,0,0,3,2,2,1,1,1,3,2,3]};
+var KEYS=[];for(var k=101;k<=124;k++)KEYS.push(k);
+var mode='mod',curN=2,prevMap=null;
+function shardOf(key,n){
+  if(mode==='mod')return fnv(key)%n;
+  return BUCKETS[n][fnv(key)%12];
+}
+function render2(animate){
+  var grid=document.getElementById('keys2');grid.innerHTML='';
+  var now=KEYS.map(function(x){return shardOf(x,curN);}),moved=0;
+  KEYS.forEach(function(key,i){
+    var d=el('div','key','#'+key);
+    d.style.setProperty('--c',COL[now[i]]);
+    if(animate&&prevMap&&prevMap[i]!==now[i]){d.classList.add('moved');d.style.animationDelay=(i*18)+'ms';moved++;}
+    grid.appendChild(d);
+  });
+  var lg=document.getElementById('legend2');lg.innerHTML='';
+  for(var s=0;s<curN;s++){
+    var x=el('span','','shard '+(s+1));var ic=el('i');ic.style.setProperty('--c',COL[s]);
+    x.insertBefore(ic,x.firstChild);lg.appendChild(x);
+  }
+  var r=document.getElementById('read2');
+  if(animate&&prevMap){
+    var pct=Math.round(moved/KEYS.length*100);
+    r.innerHTML='Now on '+curN+' shards using '+(mode==='mod'?'hash % shards':'virtual buckets')+
+      ' · <b>'+moved+' of '+KEYS.length+' rows had to move ('+pct+'%)</b>';
+  }else{
+    r.textContent='Sitting on '+curN+' shard'+(curN>1?'s':'')+'. Grow to '+(curN<4?curN+1:'2')+' and count the rows that have to move.';
+  }
+  prevMap=now;
+}
+document.getElementById('modeSeg').onclick=function(e){
+  var b=e.target.closest('button');if(!b)return;
+  mode=b.dataset.m;curN=2;prevMap=null;
+  [].forEach.call(this.children,function(x){x.classList.toggle('on',x===b);});
+  [].forEach.call(document.getElementById('growSeg').children,function(x){x.classList.toggle('on',x.dataset.n==='2');});
+  render2(false);
+};
+document.getElementById('growSeg').onclick=function(e){
+  var b=e.target.closest('button');if(!b)return;
+  var n=+b.dataset.n;
+  [].forEach.call(this.children,function(x){x.classList.toggle('on',x===b);});
+  if(n===curN)return;
+  curN=n;render2(true);
+};
+render2(false);
+
+/* ============ DEMO 3 : VERTICAL ============ */
+var VCOLS=[
+  {n:'id',t:'8 B',v:['1','2','3','4'],hot:1},
+  {n:'email',t:'40 B',v:['alice@…','bob@…','carol@…','dan@…'],hot:1},
+  {n:'password_hash',t:'60 B',v:['$2b$10…','$2b$10…','$2b$10…','$2b$10…'],hot:1},
+  {n:'bio',t:'1.2 KB',v:['long text…','long text…','long text…','long text…'],hot:0},
+  {n:'preferences',t:'800 B',v:['{json}','{json}','{json}','{json}'],hot:0}
+];
+(function(){
+  var w=document.getElementById('vsplit');
+  VCOLS.forEach(function(c){
+    var d=el('div','vcol');d.dataset.hot=c.hot;
+    var h=el('div','ch',c.n);h.title=c.t;d.appendChild(h);
+    c.v.forEach(function(v){d.appendChild(el('div','cv',v));});
+    d.appendChild(el('div','cv',c.t+' / row'));
+    w.appendChild(d);
+  });
+})();
+var vb=document.getElementById('vsplitBtn'),vs=document.getElementById('vsplit');
+vb.onclick=function(){
+  var on=vs.classList.toggle('split');
+  vb.setAttribute('aria-pressed',on);
+  vb.textContent=on?'put it back together':'split hot columns from cold';
+  [].forEach.call(vs.children,function(c){
+    c.classList.toggle('hot',on&&c.dataset.hot==='1');
+    c.classList.toggle('cold',on&&c.dataset.hot==='0');
+  });
+  document.getElementById('pf').classList.toggle('warm',on);
+  document.getElementById('pf').style.width=on?'99%':'77%';
+  document.getElementById('pageLbl').textContent=on
+    ? 'users_core rows are 108 bytes — one 8 KB page now holds 75 of them.'
+    : 'One 8 KB page holds 3 rows — 2,116 bytes each.';
+  var target=on?134:3334;
+  countTo(document.getElementById('pageCost'),target,on);
+};
+function countTo(node,target,split){
+  var start=split?3334:134,t0=null,dur=700;
+  function step(ts){
+    if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1),v=Math.round(start+(target-start)*p);
+    node.innerHTML='Reading id + email for 10,000 users: <b>'+v.toLocaleString()+' pages</b> off disk.'+
+      (p===1&&split?' 25× less I/O for the query you run most.':'');
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ============ DEMO 4 : FUNCTIONAL ============ */
+var TABLES=[
+  {n:'users',r:'100 rows',db:0},
+  {n:'courses',r:'100 rows',db:1},
+  {n:'enrollments',r:'480 rows',db:1}
+];
+var funcSplit=false;
+function renderF(){
+  var w=document.getElementById('dbs');w.innerHTML='';
+  var n=funcSplit?2:1;
+  for(var i=0;i<n;i++){
+    var d=el('div','db');
+    d.appendChild(el('h4','',funcSplit?'db'+(i+1)+' · '+(i===0?'accounts service':'catalog service'):'db1 · everything'));
+    TABLES.forEach(function(t,k){
+      if(funcSplit&&t.db!==i)return;
+      var c=el('div','tcard');c.style.setProperty('--c',COL[k]);
+      c.appendChild(document.createTextNode(t.n));
+      c.appendChild(el('small','',t.r));
+      c.style.animationDelay=(k*70)+'ms';
+      d.appendChild(c);
+    });
+    w.appendChild(d);
+  }
+  w.style.gridTemplateColumns=funcSplit?'1fr 1fr':'1fr';
+  document.getElementById('funcCap').textContent=funcSplit
+    ? 'Split by feature. users is still 100% intact in db1 — no dataset got smaller, and the join below no longer works.'
+    : 'One database. Every table can join freely with every other table.';
+}
+document.getElementById('funcBtn').onclick=function(){
+  funcSplit=!funcSplit;this.setAttribute('aria-pressed',funcSplit);
+  this.textContent=funcSplit?'merge back into one db':'split by feature';
+  document.getElementById('joinErr').classList.remove('show');
+  renderF();
+};
+document.getElementById('joinBtn').onclick=function(){
+  var e=document.getElementById('joinErr');
+  e.classList.remove('show');void e.offsetWidth;
+  e.textContent=funcSplit
+    ? 'ERROR: relation "courses" does not exist — it lives in db2. You must fetch from both databases and join the results in application code.'
+    : 'OK: 480 rows in 2 ms. Both tables are in db1, so the database does the join for you.';
+  e.style.borderColor=funcSplit?'var(--stamp)':'var(--moss)';
+  e.style.color=funcSplit?'var(--stamp)':'var(--moss)';
+  e.style.background=funcSplit?'var(--err-bg)':'var(--ok-bg)';
+  e.classList.add('show');
+};
+renderF();
+
+/* ============ DEMO 5 : ROUTER ============ */
+var QN=4,qid=7;
+(function(){
+  var w=document.getElementById('nodes');
+  for(var i=0;i<QN;i++){
+    var d=el('div','node');d.id='node'+i;d.style.setProperty('--c',COL[i]);
+    d.appendChild(document.createTextNode('shard '+(i+1)));
+    d.appendChild(el('span','ms','idle'));
+    w.appendChild(d);
+  }
+})();
+function clearNodes(){
+  for(var i=0;i<QN;i++){
+    var n=document.getElementById('node'+i);
+    n.className='node';n.querySelector('.ms').textContent='idle';
+  }
+}
+function setSteps(lines){
+  var s=document.getElementById('steps');s.innerHTML='';
+  lines.forEach(function(l,i){
+    var d=el('div','',l);d.style.animationDelay=(i*160)+'ms';s.appendChild(d);
+  });
+}
+document.getElementById('idUp').onclick=function(){qid=qid%24+1;syncId();};
+document.getElementById('idDown').onclick=function(){qid=(qid+22)%24+1;syncId();};
+function syncId(){
+  document.getElementById('idVal').textContent=qid;
+  document.getElementById('qOne').textContent='select where id = '+qid;
+}
+document.getElementById('qOne').onclick=function(){
+  clearNodes();
+  var h=fnv(qid),s=h%QN;
+  setSteps([
+    'app → router: SELECT * FROM users WHERE id = '+qid,
+    'hash('+qid+') = '+h,
+    h+' % '+QN+' = '+s+'  →  shard '+(s+1),
+    'routed to db'+(s+1)+' only'
+  ]);
+  setTimeout(function(){
+    var n=document.getElementById('node'+s);
+    n.classList.add('hit');n.querySelector('.ms').textContent='4 ms · 1 row';
+    var t=document.getElementById('steps');
+    var d=el('div','','1 shard touched · 4 ms · this is the query sharding is built for');
+    d.style.animationDelay='0ms';d.style.color='var(--moss)';t.appendChild(d);
+  },700);
+};
+document.getElementById('qAll').onclick=function(){
+  clearNodes();
+  setSteps([
+    'app → router: SELECT count(*) FROM users',
+    'no shard key in the query — cannot route',
+    'fan out to all '+QN+' shards, then sum the results'
+  ]);
+  var lat=[],i;
+  for(i=0;i<QN;i++)lat.push(4+Math.floor(Math.random()*36));
+  var slow=lat.indexOf(Math.max.apply(null,lat));
+  lat.forEach(function(ms,i){
+    setTimeout(function(){
+      var n=document.getElementById('node'+i);
+      n.classList.add(i===slow?'slow':'hit');
+      n.querySelector('.ms').textContent=ms+' ms · partial count';
+      if(i===slow){
+        var t=document.getElementById('steps');
+        var d=el('div','',QN+' shards touched · '+ms+' ms — the slowest shard sets your latency');
+        d.style.animationDelay='0ms';d.style.color='var(--ochre)';t.appendChild(d);
+      }
+    },400+ms*16);
+  });
+};
+syncId();
+
+/* ============ THEME ============ */
+var root=document.documentElement,tbtn=document.getElementById('themer'),tlbl=document.getElementById('themerLbl');
+function syncTheme(){tlbl.textContent=root.getAttribute('data-theme')==='dark'?'night':'day';}
+tbtn.onclick=function(){
+  var next=root.getAttribute('data-theme')==='dark'?'light':'dark';
+  root.setAttribute('data-theme',next);
+  try{localStorage.setItem('pt-theme',next);}catch(e){}
+  syncTheme();
+};
+syncTheme();
+
+/* ============ REVEAL ============ */
+if('IntersectionObserver' in window){
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:.08});
+  [].forEach.call(document.querySelectorAll('.reveal'),function(s){io.observe(s);});
+}else{
+  [].forEach.call(document.querySelectorAll('.reveal'),function(s){s.classList.add('in');});
+}
+})();
+</script>
+</body>
+</html>
