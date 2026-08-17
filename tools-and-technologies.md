@@ -259,6 +259,7 @@ Short on time? These eight in order get most of the value:
 Use this space for things you got stuck on, decisions you made, or topics to revisit.
 
 ```
+
 Date        Topic                 Note
 __________  ____________________  ________________________________________
 __________  ____________________  ________________________________________
